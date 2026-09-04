@@ -60,8 +60,10 @@ services:
       - "${MONGO_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_DATABASE: ${MONGODB_DB:-investment_db}
-    volumes:
-      - investment_mongo_data:/data/db
+    # 이미지 내부에 퀴즈 답안 데이터가 이미 포함되어 있으므로,
+    # 빈 볼륨이 이를 덮어쓰지 않도록 마운트를 비활성화합니다.
+    # volumes:
+    #   - investment_mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
