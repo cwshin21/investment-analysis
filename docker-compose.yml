@@ -4,9 +4,10 @@ name: investment-analysis
 # 운영 서버는 docker-compose.prod.yml을 사용합니다.
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: cwshin21/investment-analysis-backend:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: investment_backend
     restart: unless-stopped
     ports:
@@ -55,7 +56,7 @@ services:
       start_period: 20s
 
   mongo:
-    image: mongo:7
+    image: cwshin21/mongo:7
     container_name: investment_mongo
     restart: unless-stopped
     ports:
@@ -71,7 +72,7 @@ services:
       retries: 10
 
   qdrant:
-    image: qdrant/qdrant:v1.13.4
+    image: cwshin21/qdrant:latest
     container_name: investment_qdrant
     restart: unless-stopped
     ports:
@@ -81,7 +82,7 @@ services:
       - investment_qdrant_data:/qdrant/storage
 
   meilisearch:
-    image: getmeili/meilisearch:v1.15.2
+    image: cwshin21/meilisearch:latest
     container_name: investment_meilisearch
     restart: unless-stopped
     environment:
@@ -97,7 +98,7 @@ services:
 
   # 문서가 포함된 이미지가 바뀔 때 전체 텍스트 검색 색인을 새로 만듭니다.
   search-index:
-    image: investment-analysis-backend:latest
+    image: cwshin21/investment-analysis-backend:latest
     restart: "no"
     environment:
       MEILI_URL: http://meilisearch:7700
@@ -110,7 +111,7 @@ services:
     command: ["python", "/app/scripts/index_docs_meilisearch.py"]
 
   ollama:
-    image: ollama/ollama:latest
+    image: cwshin21/ollama:latest
     container_name: investment_ollama
     restart: unless-stopped
     volumes:
@@ -128,7 +129,7 @@ services:
     profiles: ["ollama-init"]
     # 앱 이미지를 빌드하지 않고 Ollama CLI로 모델을 내려받는다.
     # Buildx가 없는 Docker 설치에서도 최초 모델 준비가 가능하다.
-    image: ollama/ollama:latest
+    image: cwshin21/ollama:latest
     restart: "no"
     environment:
       OLLAMA_HOST: http://ollama:11434
@@ -141,9 +142,10 @@ services:
   # `docker compose --profile init up -d`로 첫 실행할 때 100문항을 적재합니다.
   quiz-init:
     profiles: ["init"]
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: cwshin21/investment-analysis-backend:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     restart: "no"
     depends_on:
       backend:
@@ -154,7 +156,7 @@ services:
   docs-index:
     profiles: ["tools"]
     # backend가 사용하는 이미지를 재사용해 색인 시 별도 이미지 빌드를 피한다.
-    image: investment-analysis-backend:latest
+    image: cwshin21/investment-analysis-backend:latest
     restart: "no"
     environment:
       QDRANT_URL: http://qdrant:6333
