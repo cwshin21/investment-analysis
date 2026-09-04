@@ -1,7 +1,4 @@
 name: investment-analysis
-
-# 로컬 PC 실행용 구성입니다.
-# 운영 서버는 docker-compose.prod.yml을 사용합니다.
 services:
   backend:
     image: cwshin21/investment-analysis-backend:latest
@@ -38,7 +35,7 @@ services:
     volumes:
       - ./docs:/app/docs:ro
       # Lex 전용 최소권한 프로필을 읽기 전용으로 제공합니다.
-      - ${AWS_SHARED_CREDENTIALS_DIR:-/root/.aws}:/root/.aws:ro
+      # - ${AWS_SHARED_CREDENTIALS_DIR:-/root/.aws}:/root/.aws:ro
     depends_on:
       mongo:
         condition: service_healthy
@@ -72,7 +69,7 @@ services:
       retries: 10
 
   qdrant:
-    image: cwshin21/qdrant:latest
+    image: qdrant/qdrant:latest
     container_name: investment_qdrant
     restart: unless-stopped
     ports:
@@ -82,7 +79,7 @@ services:
       - investment_qdrant_data:/qdrant/storage
 
   meilisearch:
-    image: cwshin21/meilisearch:latest
+    image: getmeili/meilisearch:latest
     container_name: investment_meilisearch
     restart: unless-stopped
     environment:
@@ -111,7 +108,7 @@ services:
     command: ["python", "/app/scripts/index_docs_meilisearch.py"]
 
   ollama:
-    image: cwshin21/ollama:latest
+    image: ollama/ollama:latest
     container_name: investment_ollama
     restart: unless-stopped
     volumes:
@@ -129,7 +126,7 @@ services:
     profiles: ["ollama-init"]
     # 앱 이미지를 빌드하지 않고 Ollama CLI로 모델을 내려받는다.
     # Buildx가 없는 Docker 설치에서도 최초 모델 준비가 가능하다.
-    image: cwshin21/ollama:latest
+    image: ollama/ollama:latest
     restart: "no"
     environment:
       OLLAMA_HOST: http://ollama:11434
