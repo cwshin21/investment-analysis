@@ -90,9 +90,20 @@ export function macroSimulationView(container) {
                 }).join('')}
               </tbody>
             </table>
-          </div>`;
+          </div>
+          <button type="button" id="sim-rag-btn" class="run-btn" style="margin-top:16px; background:#4f46e5;">
+            🤖 이 시나리오로 RAG 질문 만들기
+          </button>`;
       }
       result.innerHTML = html;
+      result.querySelector('#sim-rag-btn')?.addEventListener('click', () => {
+        const parts = Object.entries(data.summary).map(([name, s]) => {
+          const sign = s.chg_pct >= 0 ? '+' : '';
+          return `${name} ${s.start.toLocaleString()}→${s.end.toLocaleString()}(${sign}${s.chg_pct.toFixed(1)}%)`;
+        });
+        const question = `다음 거시경제 시뮬레이션 결과를 참고해서 투자자 관점에서 주의 깊게 봐야 할 점을 설명해줘: ${parts.join(', ')}`;
+        window.openRagDrawer?.(question);
+      });
     } catch (e) {
       result.innerHTML = `<p style="color:#ef4444;">오류: ${e.message}</p>`;
     } finally {

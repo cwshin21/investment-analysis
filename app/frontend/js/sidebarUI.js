@@ -1,32 +1,44 @@
 /**
- * sidebarUI.js — 사이드바 열기/닫기, 섹션 토글 공통 로직.
- * index.html(SPA)과 pages/*.html 정적 페이지 양쪽에서 공유한다.
+ * sidebarUI.js — 상단 GNB 드롭다운, 우측 하단 "AI 투자 도우미" 플로팅 위젯,
+ * 엔터프라이즈 안내 모달의 공통 로직. index.html(SPA)과 pages/*.html 정적
+ * 페이지 양쪽에서 공유한다. (좌측 사이드바는 제거되어 이 파일 이름과 달리
+ * 더 이상 사이드바를 다루지 않는다 — GNB로 전면 대체되었다.)
  */
 const DESKTOP_BREAKPOINT = 1024;
-let _sidebarOpen = window.innerWidth > DESKTOP_BREAKPOINT;
-const MENU_SECTION_ORDER = ['review', 'learn', 'quiz', 'visualization', 'portfolio', 'quant'];
 
-// SPA와 정적 페이지가 같은 메뉴 순서를 유지하도록 실제 DOM 순서를 맞춘다.
-function orderSidebarSections() {
-  const nav = document.querySelector('.sidebar-nav');
+// ── 상단 GNB 드롭다운 ──
+function closeAllGnb(except) {
+  document.querySelectorAll('.gnb-item.open').forEach((item) => {
+    if (item === except) return;
+    item.classList.remove('open');
+    item.querySelector('.gnb-link[aria-haspopup]')?.setAttribute('aria-expanded', 'false');
+  });
+}
+window._closeGnb = () => closeAllGnb();
+
+function initGnb() {
+  const nav = document.querySelector('.gnb');
   if (!nav) return;
 
-  const sections = new Map(
-    [...nav.querySelectorAll(':scope > .nav-section')].map((section) => {
-      const id = MENU_SECTION_ORDER.find((item) => section.querySelector(`#nav-${item}`));
-      return [id, section];
-    }),
-  );
-  MENU_SECTION_ORDER.forEach((id) => {
-    const section = sections.get(id);
-    if (section) nav.append(section);
+  nav.querySelectorAll('.gnb-item').forEach((item) => {
+    const link = item.querySelector('.gnb-link[aria-haspopup]');
+    if (!link) return; // 드롭다운이 없는 항목(대시보드)은 일반 링크 클릭으로 처리된다.
+    link.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const willOpen = !item.classList.contains('open');
+      closeAllGnb();
+      if (willOpen) {
+        item.classList.add('open');
+        link.setAttribute('aria-expanded', 'true');
+      }
+    });
   });
 
-  // RAG는 보조 기능이므로 모든 학습·분석 메뉴 다음, 메뉴의 마지막에 둔다.
-  const rag = nav.querySelector(':scope > .nav-item[data-view="rag-chat"]');
-  if (rag) nav.append(rag);
+  document.addEventListener('click', () => closeAllGnb());
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeAllGnb();
+  });
 }
-window._orderSidebarSections = orderSidebarSections;
 
 function ensureSidebarChatbot() {
   if (document.getElementById('floating-chatbot')) return;
@@ -137,82 +149,5 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeEnterpriseModal();
 });
 
-function syncSidebarToggle() {
-  const toggle = document.getElementById('sidebar-toggle');
-  if (!toggle) return;
-  toggle.setAttribute('aria-expanded', String(_sidebarOpen));
-  toggle.setAttribute('aria-label', _sidebarOpen ? '메뉴 닫기' : '메뉴 열기');
-}
-
-function toggleSidebar() {
-  _sidebarOpen ? closeSidebar() : openSidebar();
-}
-function openSidebar() {
-  document.getElementById('sidebar').classList.add('open');
-  document.body.classList.remove('sidebar-collapsed');
-  if (window.innerWidth <= DESKTOP_BREAKPOINT) {
-    document.getElementById('overlay').classList.add('show');
-  }
-  _sidebarOpen = true;
-  syncSidebarToggle();
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
-  if (window.innerWidth > DESKTOP_BREAKPOINT) {
-    document.body.classList.add('sidebar-collapsed');
-  }
-  _sidebarOpen = false;
-  syncSidebarToggle();
-}
-function toggleNav(id) {
-  const el = document.getElementById('nav-' + id);
-  const chev = document.getElementById('chev-' + id);
-  const open = el.classList.toggle('open');
-  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
-}
-// auto-open a section (e.g. quiz/learn while that view is active)
-window._openNavSection = function(id) {
-  const el = document.getElementById('nav-' + id);
-  const chev = document.getElementById('chev-' + id);
-  if (el && !el.classList.contains('open')) {
-    el.classList.add('open');
-    if (chev) chev.style.transform = 'rotate(180deg)';
-  }
-};
-// close every section (used before opening only the section(s) currently in use)
-function closeAllNavSections() {
-  document.querySelectorAll('.nav-children').forEach((el) => {
-    el.classList.remove('open');
-    const chev = document.getElementById('chev-' + el.id.replace(/^nav-/, ''));
-    if (chev) chev.style.transform = '';
-  });
-}
-// close everything, then open only the section(s) relevant to the current view
-window._setActiveNavSections = function(ids) {
-  closeAllNavSections();
-  (ids || []).forEach((id) => window._openNavSection(id));
-};
-
-window.addEventListener('resize', () => {
-  const isMobile = window.innerWidth <= DESKTOP_BREAKPOINT;
-  document.getElementById('overlay').classList.remove('show');
-
-  if (isMobile) {
-    document.body.classList.remove('sidebar-collapsed');
-    document.getElementById('sidebar').classList.remove('open');
-    _sidebarOpen = false;
-  } else {
-    document.getElementById('sidebar').classList.toggle('open', !document.body.classList.contains('sidebar-collapsed'));
-    _sidebarOpen = !document.body.classList.contains('sidebar-collapsed');
-  }
-
-  syncSidebarToggle();
-});
-
-if (window.innerWidth > DESKTOP_BREAKPOINT) {
-  document.getElementById('sidebar').classList.add('open');
-}
-orderSidebarSections();
+initGnb();
 ensureSidebarChatbot();
-syncSidebarToggle();

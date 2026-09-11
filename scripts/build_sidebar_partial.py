@@ -30,7 +30,11 @@ def main() -> None:
     html = INDEX_HTML.read_text(encoding="utf-8")
     match = re.search(r'<nav class="sidebar-nav">.*?</nav>', html, re.S)
     if not match:
-        raise SystemExit("index.html에서 <nav class=\"sidebar-nav\"> 블록을 찾지 못했습니다.")
+        # 좌측 사이드바가 상단 GNB 드롭다운으로 전면 교체되면서 <nav class="sidebar-nav">
+        # 자체가 사라졌다. pages/*.html도 더 이상 이 partial을 사용하지 않으므로
+        # (자체 GNB 헤더 사용) 빌드를 막지 않고 조용히 건너뛴다.
+        print("사이드바 nav 없음 — GNB 전환으로 partial 생성을 건너뜁니다.")
+        return
 
     nav = match.group(0)
     # SPA 라우트(data-view)가 있는 항목엔 정적 페이지에서도 동작하도록 href 보강

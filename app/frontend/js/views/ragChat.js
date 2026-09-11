@@ -8,7 +8,33 @@ function formatText(value) {
   return escapeHtml(value).replace(/\n/g, '<br>');
 }
 
-export function ragChatView(app) {
+function ensureMarkdownLibs() {
+  const load = (key, src) => (window[key]
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    }));
+  return Promise.all([
+    load('marked', 'https://cdn.jsdelivr.net/npm/marked@11/marked.min.js'),
+    load('DOMPurify', 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js'),
+  ]);
+}
+
+// RAG 답변(_rag_only_answer/_openai_compatible_answer, app/backend/routers/rag.py)과
+// 검색 원문에는 **굵게**·목록·표 같은 마크다운이 섞여 있어 그대로 이스케이프하면
+// 기호가 그대로 노출된다. 라이브러리가 아직 로드되지 않았으면 기존 방식으로 폴백.
+function formatAnswer(value) {
+  if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+    return formatText(value);
+  }
+  return DOMPurify.sanitize(marked.parse(String(value), { breaks: true }));
+}
+
+export function ragChatView(app, options = {}) {
   const messages = [];
   let sources = [];
   let provider = 'rag';
@@ -23,7 +49,7 @@ export function ragChatView(app) {
       <article class="rag-source-card">
         <div class="rag-source-head"><strong>출처 ${index + 1}</strong><span>유사도 ${Number(source.score).toFixed(3)}</span></div>
         <p class="rag-source-name">${escapeHtml(source.source_doc)}${source.section ? ` · ${escapeHtml(source.section)}` : ''} · 조각 ${Number(source.chunk_index) + 1}</p>
-        <p class="rag-source-text">${formatText(source.text)}</p>
+        <p class="rag-source-text">${formatAnswer(source.text)}</p>
       </article>`).join('');
   }
 
@@ -47,7 +73,7 @@ export function ragChatView(app) {
       <section class="rag-chat-layout rag-answer-layout">
         <section class="card rag-chat-panel">
           <div id="rag-messages" class="rag-messages" aria-live="polite">
-            ${messages.length ? messages.map((message) => `<div class="rag-message is-${message.role}">${formatText(message.text)}</div>`).join('') : '<div class="rag-welcome"><strong>무엇이 궁금한가요?</strong><br>예: “ETF 괴리율은 왜 생기나요?”</div>'}
+            ${messages.length ? messages.map((message) => `<div class="rag-message is-${message.role}">${message.role === 'assistant' ? formatAnswer(message.text) : formatText(message.text)}</div>`).join('') : '<div class="rag-welcome"><strong>무엇이 궁금한가요?</strong><br>예: “ETF 괴리율은 왜 생기나요?”</div>'}
           </div>
           <div class="rag-chat-compose">
             <div class="rag-examples">${EXAMPLES.map((example) => `<button type="button" class="btn btn-secondary btn-sm rag-example" data-query="${escapeHtml(example)}">${escapeHtml(example)}</button>`).join('')}</div>
@@ -139,4 +165,12 @@ export function ragChatView(app) {
   }
 
   render();
+  // 첫 렌더는 라이브러리 로드 전이라 평문 폴백일 수 있으므로, 준비되면 같은 상태로 다시 그린다.
+  ensureMarkdownLibs().then(() => render()).catch(() => {});
+
+  if (options.initialQuestion) ask(options.initialQuestion);
+
+  // 플로팅 드로어처럼 외부(app.js)에서 이 뷰를 마운트한 뒤 이어서 질문을 밀어 넣을 수 있도록
+  // 최소한의 핸들만 반환한다(페이지 이동 없이 같은 인스턴스를 재사용하기 위함).
+  return { ask };
 }

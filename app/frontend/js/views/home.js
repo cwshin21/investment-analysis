@@ -404,6 +404,18 @@ function formatQuoteValue(value, region) {
 export function homeView(container) {
   container.innerHTML = `
     <div class="home-dashboard" id="home-dashboard">
+      <section class="home-hero" aria-label="금융 퀀트 & 도메인 지식 워크스페이스">
+        <div class="home-hero-glow" aria-hidden="true"></div>
+        <div class="home-hero-inner">
+          <span class="home-hero-tag">QUANTITATIVE INTELLIGENCE PLATFORM</span>
+          <h1>AI 기반 금융 퀀트 &amp; 도메인 지식 워크스페이스</h1>
+          <p>실시간 거시 시나리오 시뮬레이션부터 Qdrant 벡터 기반 도메인 RAG 질의응답까지 단일 환경에서 제공합니다.</p>
+          <div class="home-hero-cta">
+            <button type="button" class="home-hero-btn is-primary" data-rag-drawer>✨ AI 도메인 RAG 실행</button>
+            <button type="button" class="home-hero-btn is-secondary" data-nav-tile="macro-simulation">📊 마켓 시뮬레이션 시작</button>
+          </div>
+        </div>
+      </section>
       <div class="home-market-grid">${HOME_MARKETS.map(chartCard).join('')}</div>
       <section class="home-quote-dashboard" aria-labelledby="home-quote-title">
         <header class="home-quote-dashboard-head">
@@ -722,6 +734,13 @@ export function homeView(container) {
 
   container.querySelector('#home-quote-refresh').addEventListener('click', loadQuotes);
   loadQuotes();
+
+  // 워크스페이스 배너 타일: RAG 타일은 페이지 이동 없이 우측 슬라이드오버 드로어를 열고,
+  // 나머지는 SPA 내부 뷰로 이동한다(app.js가 export하는 전역 함수 재사용).
+  container.querySelector('[data-rag-drawer]')?.addEventListener('click', () => window.openRagDrawer?.());
+  container.querySelectorAll('[data-nav-tile]').forEach((tile) => {
+    tile.addEventListener('click', () => window.navigate?.(tile.dataset.navTile));
+  });
 
   window._viewCleanup = () => {
     quoteAbortController?.abort();

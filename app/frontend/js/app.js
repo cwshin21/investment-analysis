@@ -145,6 +145,64 @@ function initScreenCaptureAssistant() {
   });
 }
 
+// 우측 슬라이드오버 RAG 드로어. 대시보드 배너 타일, 우측 하단 플로팅 버튼, 거시경제
+// 시뮬레이션의 "이 시나리오로 RAG 질문 만들기" 버튼이 공유하는 단일 인스턴스다.
+// /agent-home으로 페이지 이동하는 대신 기존 ragChatView(투자분석 자체 RAG 뷰, /api/rag/*
+// 사용)를 이 패널 안에 그대로 마운트해서 화면 전환 없이 질문·근거문서를 확인할 수 있게 한다.
+let ragDrawerHandle = null;
+
+function ensureRagDrawer() {
+  if (document.getElementById('rag-drawer')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="rag-drawer-backdrop" id="rag-drawer-backdrop" hidden></div>
+    <aside class="rag-drawer" id="rag-drawer" aria-hidden="true" aria-label="AI 도메인 지식 &amp; RAG 에이전트">
+      <header class="rag-drawer-head">
+        <span><i class="fa-solid fa-robot"></i> AI 도메인 지식 &amp; RAG 에이전트</span>
+        <button type="button" id="rag-drawer-close" aria-label="패널 닫기"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="rag-drawer-body" id="rag-drawer-body"></div>
+    </aside>
+    <button type="button" id="rag-drawer-trigger" class="rag-drawer-trigger" aria-label="AI 지식 도우미 열기">
+      <i class="fa-solid fa-comment-dots"></i><span>AI 지식 도우미</span>
+    </button>`);
+  document.getElementById('rag-drawer-close').addEventListener('click', () => closeRagDrawer());
+  document.getElementById('rag-drawer-backdrop').addEventListener('click', () => closeRagDrawer());
+  document.getElementById('rag-drawer-trigger').addEventListener('click', () => openRagDrawer());
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.getElementById('rag-drawer')?.classList.contains('open')) closeRagDrawer();
+  });
+}
+
+function openRagDrawer(prefillQuestion) {
+  ensureRagDrawer();
+  const drawer = document.getElementById('rag-drawer');
+  const backdrop = document.getElementById('rag-drawer-backdrop');
+  if (!ragDrawerHandle) {
+    ragDrawerHandle = ragChatView(document.getElementById('rag-drawer-body'), { initialQuestion: prefillQuestion });
+  } else if (prefillQuestion) {
+    ragDrawerHandle.ask(prefillQuestion);
+  }
+  backdrop.hidden = false;
+  requestAnimationFrame(() => {
+    drawer.classList.add('open');
+    backdrop.classList.add('show');
+  });
+  drawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeRagDrawer() {
+  const drawer = document.getElementById('rag-drawer');
+  const backdrop = document.getElementById('rag-drawer-backdrop');
+  if (!drawer) return;
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  backdrop.classList.remove('show');
+  setTimeout(() => { if (!drawer.classList.contains('open')) backdrop.hidden = true; }, 250);
+}
+
+window.openRagDrawer = openRagDrawer;
+window.closeRagDrawer = closeRagDrawer;
+
 function initGlobalSearch() {
   const form = document.getElementById('global-search');
   const input = document.getElementById('global-search-input');
@@ -359,7 +417,7 @@ const MOBILE_BREAKPOINT = 1024;
 
 function updateQuizSidebarLock() {
   for (let d = 2; d <= 15; d++) {
-    const el = document.querySelector(`.nav-item[data-view="quiz-day-${d}"]`);
+    const el = document.querySelector(`.gnb-panel-item[data-view="quiz-day-${d}"]`);
     if (!el) continue;
     const prevDone = (() => {
       try { const p = JSON.parse(localStorage.getItem(`quiz_progress_day${d - 1}`)); return p?.finished === true; } catch { return false; }
@@ -382,30 +440,13 @@ function navigate(view) {
   }
   window._viewCleanup = null;
 
-  // Update active sidebar link
-  document.querySelectorAll('.nav-item[data-view], .sidebar-link[data-view]').forEach(a => {
+  // Update active GNB link (상단 드롭다운 안의 현재 화면 항목을 강조)
+  document.querySelectorAll('.gnb-panel-item[data-view], .gnb-link[data-view]').forEach(a => {
     a.classList.toggle('active', a.dataset.view === view);
   });
 
   // Update breadcrumb
   if (breadcrumb) breadcrumb.textContent = route.label;
-
-  // 현재 화면이 속한 사이드바 섹션만 펼치고 나머지는 닫는다 (사용 중인 메뉴만 열림)
-  const _practiceViews = ['macro-realtime','macro-simulation','kospi-excluded','industry-analysis',
-    'dart-region-search','group-network','company-financial','financial-statement','valuation',
-    'risk','technical-chart','backtest','pipeline','cross-validation','random-forest',
-    'kmeans','svm','mlp','linear-regression','lstm','transformer','market-snapshot','financial-knowledge'];
-  const _portfolioViews = ['portfolio', 'portfolio-combination', 'portfolio-guide', 'portfolio-simulation'];
-  const _aiViews = ['dart-financial-analysis','dart-company-search','tax-accounting'];
-  const activeSections = [];
-  if (['learn-10-1', 'learn-10-2', 'learn-10-3', 'learn-11'].includes(view)) activeSections.push('review');
-  else if (view?.startsWith('learn-')) activeSections.push('learn');
-  if (view?.startsWith('quiz-') || view === 'vocabulary-exam') activeSections.push('quiz');
-  if (['server-resources', 'world-markets', 'asset-classes', 'today-gainers', 'today-sobujang', 'volume-cloud', 'sector-cloud', 'global-capital-map'].includes(view)) activeSections.push('visualization');
-  if (_portfolioViews.includes(view)) activeSections.push('portfolio');
-  if (_practiceViews.includes(view)) activeSections.push('practice');
-  if (_aiViews.includes(view)) activeSections.push('aitools');
-  if (typeof window._setActiveNavSections === 'function') window._setActiveNavSections(activeSections);
 
   if (view?.startsWith('quiz-') || view === 'vocabulary-exam') updateQuizSidebarLock();
 
@@ -416,7 +457,7 @@ function navigate(view) {
   requestAnimationFrame(() => restoreFormState(view, app));
   addPracticeGuide(view);
 
-  if (window.innerWidth <= MOBILE_BREAKPOINT && typeof closeSidebar === 'function') closeSidebar();
+  window._closeGnb?.();
 }
 
 window.navigate = navigate;
@@ -425,14 +466,22 @@ window.navigate = navigate;
 app.addEventListener('input', (event) => saveFormState(currentView, app));
 app.addEventListener('change', (event) => saveFormState(currentView, app));
 
-// Wire up sidebar links
+// Wire up GNB links
 // 'chart-drawing'은 페이지 이동이 아니라 오프캔버스 패널을 여는 위젯이라
 // initChartDrawingOffcanvas()가 별도의 클릭 리스너로 처리한다.
-document.querySelectorAll('.nav-item[data-view], .sidebar-link[data-view]').forEach(a => {
+document.querySelectorAll('.gnb-panel-item[data-view], .gnb-link[data-view]').forEach(a => {
   if (a.dataset.view === 'chart-drawing') return;
   a.addEventListener('click', (e) => {
     e.preventDefault();
     navigate(a.dataset.view);
+  });
+});
+
+// GNB의 "도메인 RAG 에이전트" 항목: 페이지 이동 없이 슬라이드오버 드로어를 연다.
+document.querySelectorAll('[data-rag-drawer]').forEach((el) => {
+  el.addEventListener('click', () => {
+    window.openRagDrawer?.();
+    window._closeGnb?.();
   });
 });
 
@@ -551,6 +600,7 @@ checkHealth();
 initScreenCaptureAssistant();
 initGlobalSearch();
 initChartDrawingOffcanvas();
+ensureRagDrawer();
 initAuth().then(() => { if (currentView) recordUsage(currentView); });
 setInterval(checkHealth, 30000);
 refreshTopbarMarkets();
@@ -562,13 +612,13 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // Boot
-// pages/*.html 정적 페이지의 사이드바 링크가 index.html?view=xxx 형태로
+// pages/*.html 정적 페이지의 GNB 링크가 index.html?view=xxx 형태로
 // 돌아오므로, 쿼리스트링에 유효한 view가 있으면 그 화면으로 바로 진입한다.
 const requestedView = new URLSearchParams(window.location.search).get('view');
 if (requestedView === 'chart-drawing') {
   // 'chart-drawing'은 라우트가 아니라 오프캔버스 위젯이므로, 홈으로 이동한 뒤 패널을 연다.
   navigate('home');
-  document.querySelector('.nav-item[data-view="chart-drawing"]')?.click();
+  document.querySelector('.gnb-panel-item[data-view="chart-drawing"]')?.click();
 } else {
   navigate(requestedView && routes[requestedView] ? requestedView : 'home');
 }

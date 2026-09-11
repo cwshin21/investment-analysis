@@ -1,10 +1,10 @@
 /**
- * 드로잉 차트 — 사이드바에서 여는 오프캔버스(우측 슬라이드) 패널.
+ * 드로잉 차트 — GNB "퀀트 랩" 드롭다운에서 여는 오프캔버스(우측 슬라이드) 패널.
  * 원래 학습 문서(주식 2)의 인라인 버튼으로 열리던 모달을 분리해,
- * 어느 화면에서든 사이드바 메뉴로 열 수 있게 만든 전역 위젯이다.
+ * 어느 화면에서든 GNB 메뉴로 열 수 있게 만든 전역 위젯이다.
  */
 export function initChartDrawingOffcanvas() {
-  const trigger = document.querySelector('.nav-item[data-view="chart-drawing"]');
+  const trigger = document.querySelector('.gnb-panel-item[data-view="chart-drawing"]');
   if (!trigger) return;
 
   const panel = document.createElement('div');
