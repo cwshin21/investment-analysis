@@ -53,5 +53,29 @@ export const LEARN_DOCS = [
     "file": "11.md",
     "title": "거시경제와 주식시장 읽기",
     "label": "거시경제와 주식시장"
+  },
+  {
+    "id": "12",
+    "file": "12.md",
+    "title": "채권과 금리 이해하기",
+    "label": "채권과 금리 이해하기"
+  },
+  {
+    "id": "13",
+    "file": "13.md",
+    "title": "선물과 옵션",
+    "label": "선물과 옵션"
+  },
+  {
+    "id": "14",
+    "file": "14.md",
+    "title": "펀드 · ETF",
+    "label": "펀드 · ETF"
+  },
+  {
+    "id": "15",
+    "file": "15.md",
+    "title": "자산배분, 퀀트",
+    "label": "자산배분, 퀀트"
   }
 ];

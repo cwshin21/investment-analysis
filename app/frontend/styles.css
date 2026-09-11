@@ -631,6 +631,11 @@ img { max-width: 100%; }
 .md-body h1 { font-size: 1.65rem; font-weight: 800; margin: 0 0 20px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
 .md-body h2 { font-size: 1.2rem; font-weight: 700; margin: 32px 0 12px; color: #1a1a1a; border-left: 4px solid var(--primary); background: var(--primary-light); padding: 8px 10px 8px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .md-body h3 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; font-weight: 800; margin: 26px 0 10px; padding: 3px 0 3px 12px; border-left: 3px solid var(--primary); color: #1e3a5f; }
+/* .learn-body(다크 테마 학습 뷰)에서만 밝은 글자색으로 오버라이드한다.
+   .integrated-content-modal 등 아직 흰 배경으로 남아있는 다른 .md-body 컨텍스트는
+   그대로 어두운 글자색을 써야 보이므로 여기서 건드리지 않는다. */
+.learn-body .md-body h2 { color: var(--text); }
+.learn-body .md-body h3 { color: var(--text); }
 .md-body h3::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
 .md-body h4 { font-size: 1rem; font-weight: 700; margin: 16px 0 6px; color: var(--text-muted); }
 .md-body p  { margin: 0 0 12px; }
@@ -641,6 +646,7 @@ img { max-width: 100%; }
 .md-body td { padding: 7px 12px; border: 1px solid var(--border); }
 .md-body tr:nth-child(even) td { background: var(--surface-soft); }
 .md-body code { background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 1px 5px; font-size: .85em; font-family: "Fira Code", "Cascadia Code", monospace; }
+.learn-body .md-body code { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); }
 .md-body pre  { background: #1e1e1e; border-radius: var(--radius-sm); padding: 16px; overflow-x: auto; margin: 16px 0; border: 1px solid #333; }
 .md-body pre code { background: none; border: none; color: #e2e8f0; font-size: .85rem; }
 .vocabulary-tip {
@@ -1297,6 +1303,7 @@ body.modal-open { overflow: hidden; }
   .integrated-content-modal-body { padding: 18px 16px 22px; }
 }
 .md-body blockquote { border-left: 4px solid var(--primary); margin: 14px 0; padding: 10px 16px; background: var(--primary-light); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: #444444; }
+.learn-body .md-body blockquote { color: var(--text-muted); }
 .md-body strong { font-weight: 700; color: var(--text); }
 .md-body a { color: var(--primary); text-decoration: underline; }
 .md-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
